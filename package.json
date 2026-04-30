@@ -1,0 +1,28 @@
+{
+  "name": "shop-manager",
+  "version": "1.0.0",
+  "description": "RetailPro - Ứng dụng quản lý bán hàng",
+  "main": "BE/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "build": {
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true
+    }
+  },
+  "devDependencies": {
+    "electron": "^28.3.3",
+    "electron-builder": "^24.0.0"
+  },
+  "dependencies": {
+    "better-sqlite3": "^9.6.0",
+    "xlsx": "^0.18.5"
+  }
+}

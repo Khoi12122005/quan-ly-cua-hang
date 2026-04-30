@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>RetailPro — Đăng nhập</title>
+<link rel="stylesheet" href="../styles/main.css"/>
+</head>
+<body style="margin-top:32px">
+
+<!-- Titlebar -->
+<div class="titlebar">
+  <span style="flex:1;padding-left:12px;font-size:11px;color:#94a3b8;font-family:Inter,sans-serif">RetailPro</span>
+  <button class="titlebar-btn" onclick="api.minimize()">─</button>
+  <button class="titlebar-btn close" onclick="api.close()">✕</button>
+</div>
+
+<!-- Login Page -->
+<div class="login-page">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-icon">🏪</div>
+      <h1>RetailPro</h1>
+      <p>Hệ thống quản lý bán hàng</p>
+    </div>
+
+    <!-- Tabs -->
+    <div class="login-tabs">
+      <button class="login-tab active" id="tab-login" onclick="switchTab('login')">Đăng nhập</button>
+      <button class="login-tab" id="tab-register" onclick="switchTab('register')">Đăng ký</button>
+    </div>
+
+    <!-- Login Form -->
+    <form id="form-login" onsubmit="doLogin(event)">
+      <div class="form-group">
+        <label class="form-label">Tên đăng nhập</label>
+        <input id="login-username" class="form-control" type="text" placeholder="Nhập tên đăng nhập" autocomplete="username" required/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mật khẩu</label>
+        <input id="login-password" class="form-control" type="password" placeholder="Nhập mật khẩu" autocomplete="current-password" required/>
+      </div>
+      <div id="login-error" style="color:#ef4444;font-size:13px;margin-bottom:12px;display:none"></div>
+      <button type="submit" class="btn btn-primary w-full btn-lg" id="btn-login">
+        🔑 Đăng nhập
+      </button>
+      <p class="login-hint">Tài khoản mặc định: <b>admin</b> / <b>admin123</b></p>
+    </form>
+
+    <!-- Register Form -->
+    <form id="form-register" style="display:none" onsubmit="doRegister(event)">
+      <div class="form-group">
+        <label class="form-label">Tên đăng nhập</label>
+        <input id="reg-username" class="form-control" type="text" placeholder="Tối thiểu 3 ký tự" required/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mật khẩu</label>
+        <input id="reg-password" class="form-control" type="password" placeholder="Tối thiểu 6 ký tự" required/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Xác nhận mật khẩu</label>
+        <input id="reg-password2" class="form-control" type="password" placeholder="Nhập lại mật khẩu" required/>
+      </div>
+      <div id="reg-error" style="color:#ef4444;font-size:13px;margin-bottom:12px;display:none"></div>
+      <button type="submit" class="btn btn-success w-full btn-lg">✅ Tạo tài khoản</button>
+    </form>
+  </div>
+</div>
+
+<script>
+function switchTab(tab) {
+  document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+  document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+  document.getElementById('form-login').style.display = tab === 'login' ? '' : 'none';
+  document.getElementById('form-register').style.display = tab === 'register' ? '' : 'none';
+}
+
+async function doLogin(e) {
+  e.preventDefault();
+  const btn = document.getElementById('btn-login');
+  const errEl = document.getElementById('login-error');
+  const username = document.getElementById('login-username').value.trim();
+  const password = document.getElementById('login-password').value;
+  btn.disabled = true; btn.textContent = 'Đang đăng nhập...';
+  errEl.style.display = 'none';
+  try {
+    const res = await api.login({ username, password });
+    if (res.success) {
+      sessionStorage.setItem('user', JSON.stringify({ username: res.username, id: res.id }));
+      api.navigateToApp();
+    } else {
+      errEl.textContent = res.message; errEl.style.display = 'block';
+    }
+  } catch(err) {
+    errEl.textContent = 'Lỗi kết nối. Thử lại!'; errEl.style.display = 'block';
+  }
+  btn.disabled = false; btn.innerHTML = '🔑 Đăng nhập';
+}
+
+async function doRegister(e) {
+  e.preventDefault();
+  const errEl = document.getElementById('reg-error');
+  const username = document.getElementById('reg-username').value.trim();
+  const password = document.getElementById('reg-password').value;
+  const password2 = document.getElementById('reg-password2').value;
+  errEl.style.display = 'none';
+  if (password !== password2) {
+    errEl.textContent = 'Mật khẩu xác nhận không khớp!'; errEl.style.display = 'block'; return;
+  }
+  const res = await api.register({ username, password });
+  if (res.success) {
+    alert('Đăng ký thành công! Hãy đăng nhập.');
+    switchTab('login');
+  } else {
+    errEl.textContent = res.message; errEl.style.display = 'block';
+  }
+}
+</script>
+</body>
+</html>
