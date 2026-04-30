@@ -1,4 +1,3 @@
-// ── Helpers ──────────────────────────────────────────────────────────────────
 const fmt = (n) => new Intl.NumberFormat('vi-VN').format(n) + ' ₫';
 
 function toast(msg, type = 'success') {
@@ -13,7 +12,6 @@ function toast(msg, type = 'success') {
 function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
 
-// ── Session ───────────────────────────────────────────────────────────────────
 let currentUser = null;
 try { currentUser = JSON.parse(sessionStorage.getItem('user')); } catch {}
 if (!currentUser) { api.navigateToLogin(); }
@@ -37,7 +35,6 @@ function doLogout() {
   }
 }
 
-// ── Router ────────────────────────────────────────────────────────────────────
 const pageTitles = { dashboard: 'Dashboard', products: 'Sản phẩm', inventory: 'Tồn kho', sales: 'Bán hàng', history: 'Lịch sử', settings: 'Cài đặt' };
 let currentView = 'dashboard';
 
@@ -57,7 +54,6 @@ function navigate(view, btn) {
   else if (view === 'settings') loadSettings();
 }
 
-// ── Dashboard ─────────────────────────────────────────────────────────────────
 async function loadDashboard() {
   try {
     const s = await api.getDashboardStats();
@@ -109,7 +105,6 @@ function renderRecentSales(sales) {
     </tr>`).join('');
 }
 
-// ── Products ──────────────────────────────────────────────────────────────────
 let allProducts = [];
 let currentCat = '';
 
@@ -281,7 +276,6 @@ function clearImage() {
   img.src = ''; img.style.display = 'none';
 }
 
-// ── Inventory ─────────────────────────────────────────────────────────────────
 async function loadInventory() {
   try {
     const products = await api.getProducts();
@@ -306,7 +300,6 @@ async function loadInventory() {
   } catch (e) { toast('Lỗi tải tồn kho', 'error'); }
 }
 
-// ── Sales ─────────────────────────────────────────────────────────────────────
 let cart = [];
 let saleProducts = [];
 
@@ -452,7 +445,6 @@ function printCurrentInvoice() {
   }
 }
 
-// ── History ───────────────────────────────────────────────────────────────────
 let allSales = [];
 
 async function loadHistory() {
@@ -534,7 +526,6 @@ function showInvoice(detail) {
 
 function printInvoice() { window.print(); }
 
-// ── Settings ──────────────────────────────────────────────────────────────────
 function loadSettings() {
   if (currentUser) document.getElementById('settings-username').value = currentUser.username;
 }
@@ -577,11 +568,8 @@ async function doChangePassword() {
 }
 
 function showNotifications() { toast('Không có thông báo mới', 'info'); }
-
-// Global search
 document.getElementById('global-search').addEventListener('input', function() {
   if (currentView === 'products') { document.getElementById('product-search').value = this.value; filterProducts(); }
 });
 
-// ── Init ──────────────────────────────────────────────────────────────────────
 loadDashboard();

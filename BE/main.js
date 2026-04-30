@@ -1,4 +1,3 @@
-// main.js - Electron Main Process
 const { app, BrowserWindow, ipcMain, dialog, Menu, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
@@ -28,8 +27,6 @@ function createWindow() {
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
   });
-
-  // Custom menu (no default)
   Menu.setApplicationMenu(null);
 }
 
@@ -47,7 +44,6 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
-// ─── Window controls ───────────────────────────────────────────────────────
 ipcMain.on('window-minimize', () => mainWindow.minimize());
 ipcMain.on('window-maximize', () => {
   if (mainWindow.isMaximized()) mainWindow.unmaximize();
@@ -55,7 +51,6 @@ ipcMain.on('window-maximize', () => {
 });
 ipcMain.on('window-close', () => mainWindow.close());
 
-// ─── Navigate to app ───────────────────────────────────────────────────────
 ipcMain.on('navigate-to-app', () => {
   mainWindow.loadFile(path.join(__dirname, '..', 'FE', 'pages', 'app.html'));
 });
@@ -63,29 +58,23 @@ ipcMain.on('navigate-to-login', () => {
   mainWindow.loadFile(path.join(__dirname, '..', 'FE', 'pages', 'login.html'));
 });
 
-// ─── Auth ──────────────────────────────────────────────────────────────────
-// ─── DB shortcut ───────────────────────────────────────────────────────────
 const getDb = () => require('../database/database');
 
 ipcMain.handle('auth-register', (event, { username, password }) => getDb().createUser(username, password));
 ipcMain.handle('auth-login', (event, { username, password }) => getDb().loginUser(username, password));
 ipcMain.handle('auth-change-password', (event, { username, oldPassword, newPassword }) => getDb().changePassword(username, oldPassword, newPassword));
 
-// ─── Products ──────────────────────────────────────────────────────────────
 ipcMain.handle('products-get-all', () => getDb().getProducts());
 ipcMain.handle('products-add', (event, product) => getDb().addProduct(product));
 ipcMain.handle('products-update', (event, product) => getDb().updateProduct(product));
 ipcMain.handle('products-delete', (event, id) => getDb().deleteProduct(id));
 
-// ─── Sales ─────────────────────────────────────────────────────────────────
 ipcMain.handle('sales-create', (event, { items, total }) => getDb().createSale(items, total));
 ipcMain.handle('sales-get-all', () => getDb().getSales());
 ipcMain.handle('sales-get-detail', (event, saleId) => getDb().getSaleDetail(saleId));
 
-// ─── Dashboard ─────────────────────────────────────────────────────────────
 ipcMain.handle('dashboard-stats', () => getDb().getDashboardStats());
 
-// ─── Backup / Restore ──────────────────────────────────────────────────────
 ipcMain.handle('backup-export', async () => {
   const data = getDb().exportBackup();
   const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '_');
@@ -116,7 +105,6 @@ ipcMain.handle('backup-import', async () => {
   }
 });
 
-// ─── Export Excel ──────────────────────────────────────────────────────────
 ipcMain.handle('export-excel', async (event, { type, role }) => {
   const XLSX = require('xlsx');
   let data, filename;
@@ -158,7 +146,6 @@ ipcMain.handle('export-excel', async (event, { type, role }) => {
   return { success: true, message: `Đã xuất: ${filePath}` };
 });
 
-// ─── Pick image file ────────────────────────────────────────────────────────
 ipcMain.handle('pick-image', async () => {
   const { filePaths } = await dialog.showOpenDialog(mainWindow, {
     title: 'Chọn ảnh sản phẩm',

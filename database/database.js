@@ -1,4 +1,3 @@
-// database.js - SQLite Database Layer (better-sqlite3)
 const Database = require('better-sqlite3');
 const path = require('path');
 const crypto = require('crypto');
@@ -15,7 +14,6 @@ function hashPassword(password) {
   return crypto.createHash('sha256').update(password + 'retailpro_salt_2024').digest('hex');
 }
 
-// ─── Init ──────────────────────────────────────────────────────────────────
 function init() {
   db = new Database(getDbPath());
   db.pragma('journal_mode = WAL');
@@ -66,8 +64,6 @@ function init() {
   try { db.exec('ALTER TABLE products ADD COLUMN cost_price REAL DEFAULT 0'); } catch (e) {}
   try { db.exec('ALTER TABLE sale_items ADD COLUMN unit TEXT DEFAULT ""'); } catch (e) {}
   try { db.exec('ALTER TABLE sale_items ADD COLUMN cost_price REAL DEFAULT 0'); } catch (e) {}
-
-  // Seed default admin if no users
   const count = db.prepare('SELECT COUNT(*) as c FROM users').get();
   if (count.c === 0) {
     db.prepare('INSERT INTO users (username, password, role) VALUES (?, ?, ?)').run(
@@ -76,7 +72,6 @@ function init() {
   }
 }
 
-// ─── Auth ──────────────────────────────────────────────────────────────────
 function createUser(username, password) {
   try {
     if (!username || !password) return { success: false, message: 'Vui lòng nhập đầy đủ thông tin' };
@@ -114,7 +109,6 @@ function changePassword(username, oldPassword, newPassword) {
   }
 }
 
-// ─── Products ──────────────────────────────────────────────────────────────
 function getProducts() {
   return db.prepare('SELECT * FROM products ORDER BY created_at DESC').all();
 }
@@ -128,8 +122,6 @@ function addProduct({ name, cost_price, price, category, image, quantity, unit }
     
     let qty = Number(quantity);
     if (isNaN(qty) || qty < 0) return { success: false, message: 'Số lượng không hợp lệ' };
-    
-    // Validate Decimal constraints
     const qtyStr = qty.toString();
     if (qtyStr.includes('.') && qtyStr.split('.')[1].length > 2) {
       return { success: false, message: 'Số lượng tối đa 2 chữ số thập phân' };
@@ -160,8 +152,6 @@ function updateProduct({ id, name, cost_price, price, category, image, quantity,
     
     let qty = Number(quantity);
     if (isNaN(qty) || qty < 0) return { success: false, message: 'Số lượng không hợp lệ' };
-    
-    // Validate Decimal constraints
     const qtyStr = qty.toString();
     if (qtyStr.includes('.') && qtyStr.split('.')[1].length > 2) {
       return { success: false, message: 'Số lượng tối đa 2 chữ số thập phân' };
@@ -192,12 +182,9 @@ function deleteProduct(id) {
   }
 }
 
-// ─── Sales ─────────────────────────────────────────────────────────────────
 function createSale(items, total) {
   try {
     if (!items || items.length === 0) return { success: false, message: 'Không có sản phẩm' };
-
-    // Check stock
     for (const item of items) {
       const product = db.prepare('SELECT * FROM products WHERE id = ?').get(item.productId);
       if (!product) return { success: false, message: `Sản phẩm không tồn tại` };
@@ -241,7 +228,6 @@ function getSaleDetail(saleId) {
   return { ...sale, items };
 }
 
-// ─── Dashboard ─────────────────────────────────────────────────────────────
 function getDashboardStats() {
   const totalRevenue = db.prepare('SELECT COALESCE(SUM(total), 0) as total FROM sales').get().total;
   
@@ -266,8 +252,6 @@ function getDashboardStats() {
     "SELECT COALESCE(SUM(i.quantity * i.cost_price), 0) as cost FROM sale_items i JOIN sales s ON i.sale_id = s.id WHERE date(s.date) = date('now', 'localtime')"
   ).get().cost;
   const todayProfit = todayRevenue - todayCost;
-
-  // Revenue by day (last 7 days)
   const revenueByDay = db.prepare(`
     SELECT 
       date(s.date) as day, 
@@ -282,7 +266,6 @@ function getDashboardStats() {
   return { totalRevenue, totalCost, totalProfit, totalProducts, lowStock, outOfStock, recentSales, todayRevenue, todayCost, todayProfit, revenueByDay };
 }
 
-// ─── Backup & Restore ──────────────────────────────────────────────────────
 function exportBackup() {
   return {
     version: '1.0',

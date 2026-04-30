@@ -76,8 +76,7 @@
 <!-- Main Content -->
 <main class="main-content">
 
-  <!-- ── Dashboard View ────────────────────────── -->
-  <div id="view-dashboard" class="view active">
+    <div id="view-dashboard" class="view active">
     <div class="page-header">
       <h2>Tổng quan hôm nay</h2>
       <button class="btn btn-outline" onclick="loadDashboard()">🔄 Làm mới</button>
@@ -128,8 +127,7 @@
     </div>
   </div>
 
-  <!-- ── Products View ─────────────────────────── -->
-  <div id="view-products" class="view">
+    <div id="view-products" class="view">
     <div class="page-header">
       <h2>Danh sách sản phẩm</h2>
       <button class="btn btn-primary" id="btn-add-product" onclick="openAddProduct()">➕ Thêm sản phẩm</button>
@@ -150,8 +148,7 @@
     <div class="grid-products" id="products-grid"></div>
   </div>
 
-  <!-- ── Inventory View ────────────────────────── -->
-  <div id="view-inventory" class="view">
+    <div id="view-inventory" class="view">
     <div class="page-header"><h2>Quản lý tồn kho</h2></div>
     <div class="card">
       <div class="card-header"><span class="card-title">📦 Tình trạng tồn kho</span>
@@ -172,8 +169,7 @@
     </div>
   </div>
 
-  <!-- ── Sales View ────────────────────────────── -->
-  <div id="view-sales" class="view">
+    <div id="view-sales" class="view">
     <div class="page-header"><h2>Tạo đơn hàng</h2></div>
     <div class="grid-2" style="align-items:start">
       <!-- Product selector -->
@@ -215,8 +211,7 @@
     </div>
   </div>
 
-  <!-- ── History View ──────────────────────────── -->
-  <div id="view-history" class="view">
+    <div id="view-history" class="view">
     <div class="page-header">
       <h2>Lịch sử giao dịch</h2>
       <button class="btn btn-outline" onclick="exportExcel('sales')">📊 Xuất Excel</button>
@@ -237,8 +232,7 @@
     </div>
   </div>
 
-  <!-- ── Settings View ────────────────────────── -->
-  <div id="view-settings" class="view">
+    <div id="view-settings" class="view">
     <div class="page-header"><h2>Cài đặt hệ thống</h2></div>
     <div class="grid-2" style="align-items:start">
       <!-- Data Management -->
@@ -308,8 +302,7 @@
     </div>
   </div>
 
-  <!-- ── Checkout Success View ───────────────────── -->
-  <div id="view-checkout-success" class="view">
+    <div id="view-checkout-success" class="view">
     <div class="checkout-success-wrapper">
       <div class="checkout-success-card">
         <div class="success-icon-wrap">✓</div>
@@ -342,7 +335,6 @@
 
 </main>
 
-<!-- ── Modal: Sản phẩm ────────────────────────── -->
 <div id="modal-product" class="modal-overlay hidden">
   <div class="modal">
     <div class="modal-header">
@@ -414,7 +406,6 @@
   </div>
 </div>
 
-<!-- ── Modal: Chi tiết hóa đơn ────────────────── -->
 <div id="modal-invoice" class="modal-overlay hidden">
   <div class="modal" style="max-width:560px">
     <div class="modal-header">
