@@ -8,7 +8,6 @@
 </head>
 <body style="margin-top:32px">
 
-<!-- Titlebar -->
 <div class="titlebar">
   <span style="flex:1;padding-left:12px;font-size:11px;color:#94a3b8;font-family:Inter,sans-serif">RetailPro Desktop</span>
   <button class="titlebar-btn" onclick="api.minimize()">─</button>
@@ -16,7 +15,6 @@
   <button class="titlebar-btn close" onclick="api.close()">✕</button>
 </div>
 
-<!-- Sidebar -->
 <aside class="sidebar">
   <div class="sidebar-logo">
     <div class="logo-icon">🏪</div>
@@ -55,7 +53,6 @@
   </div>
 </aside>
 
-<!-- Topbar -->
 <header class="topbar">
   <div class="topbar-left">
     <h1 class="page-title" id="page-title">Dashboard</h1>
@@ -73,7 +70,6 @@
   </div>
 </header>
 
-<!-- Main Content -->
 <main class="main-content">
 
     <div id="view-dashboard" class="view active">
@@ -172,8 +168,7 @@
     <div id="view-sales" class="view">
     <div class="page-header"><h2>Tạo đơn hàng</h2></div>
     <div class="grid-2" style="align-items:start">
-      <!-- Product selector -->
-      <div class="card">
+            <div class="card">
         <div class="card-header"><span class="card-title">🛍️ Chọn sản phẩm</span></div>
         <div class="card-body">
           <div class="search-box mb-4">
@@ -183,8 +178,7 @@
           <div id="sale-products-list" style="max-height:400px;overflow-y:auto;display:flex;flex-direction:column;gap:8px"></div>
         </div>
       </div>
-      <!-- Cart -->
-      <div class="card" style="position:sticky;top:calc(32px + 64px + 24px)">
+            <div class="card" style="position:sticky;top:calc(32px + 64px + 24px)">
         <div class="card-header"><span class="card-title">🛒 Giỏ hàng</span>
           <button class="btn btn-ghost btn-sm" onclick="clearCart()">🗑️ Xóa hết</button>
         </div>
@@ -235,8 +229,7 @@
     <div id="view-settings" class="view">
     <div class="page-header"><h2>Cài đặt hệ thống</h2></div>
     <div class="grid-2" style="align-items:start">
-      <!-- Data Management -->
-      <div>
+            <div>
         <div class="settings-section">
           <div class="settings-section-title">💾 Quản lý dữ liệu</div>
           <div class="settings-item">
@@ -272,8 +265,7 @@
           </div>
         </div>
       </div>
-      <!-- Security -->
-      <div>
+            <div>
         <div class="settings-section">
           <div class="settings-section-title">🔒 Bảo mật tài khoản</div>
           <div class="card">
@@ -420,10 +412,8 @@
   </div>
 </div>
 
-<!-- Toast container -->
 <div id="toast-container"></div>
 
-<!-- Invoice print area -->
 <div id="invoice-print" style="display:none"></div>
 
 <script src="../renderer/app.js"></script>

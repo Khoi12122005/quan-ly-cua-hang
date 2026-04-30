@@ -8,14 +8,12 @@
 </head>
 <body style="margin-top:32px">
 
-<!-- Titlebar -->
 <div class="titlebar">
   <span style="flex:1;padding-left:12px;font-size:11px;color:#94a3b8;font-family:Inter,sans-serif">RetailPro</span>
   <button class="titlebar-btn" onclick="api.minimize()">─</button>
   <button class="titlebar-btn close" onclick="api.close()">✕</button>
 </div>
 
-<!-- Login Page -->
 <div class="login-page">
   <div class="login-card">
     <div class="login-logo">
@@ -24,14 +22,12 @@
       <p>Hệ thống quản lý bán hàng</p>
     </div>
 
-    <!-- Tabs -->
-    <div class="login-tabs">
+        <div class="login-tabs">
       <button class="login-tab active" id="tab-login" onclick="switchTab('login')">Đăng nhập</button>
       <button class="login-tab" id="tab-register" onclick="switchTab('register')">Đăng ký</button>
     </div>
 
-    <!-- Login Form -->
-    <form id="form-login" onsubmit="doLogin(event)">
+        <form id="form-login" onsubmit="doLogin(event)">
       <div class="form-group">
         <label class="form-label">Tên đăng nhập</label>
         <input id="login-username" class="form-control" type="text" placeholder="Nhập tên đăng nhập" autocomplete="username" required/>
@@ -47,8 +43,7 @@
       <p class="login-hint">Tài khoản mặc định: <b>admin</b> / <b>admin123</b></p>
     </form>
 
-    <!-- Register Form -->
-    <form id="form-register" style="display:none" onsubmit="doRegister(event)">
+        <form id="form-register" style="display:none" onsubmit="doRegister(event)">
       <div class="form-group">
         <label class="form-label">Tên đăng nhập</label>
         <input id="reg-username" class="form-control" type="text" placeholder="Tối thiểu 3 ký tự" required/>
