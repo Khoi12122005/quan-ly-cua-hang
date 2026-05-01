@@ -173,6 +173,13 @@ ipcMain.handle('export-excel', async (event, { type, role, reportData }) => {
       }
       return row;
     });
+    data.push({}); // Empty row
+    const totalRow = { 'Ngày': 'TỔNG CỘNG', 'Số đơn': reportData.totalOrders, 'Doanh thu (VNĐ)': reportData.totalRevenue };
+    if (role === 'admin') {
+      totalRow['Chi phí (VNĐ)'] = reportData.totalCost;
+      totalRow['Lợi nhuận (VNĐ)'] = reportData.totalProfit;
+    }
+    data.push(totalRow);
     filename = 'bao-cao.xlsx';
   } else {
     data = getDb().getSales().map(s => {
@@ -187,6 +194,16 @@ ipcMain.handle('export-excel', async (event, { type, role, reportData }) => {
       }
       return row;
     });
+    const totalRevenue = getDb().getSales().reduce((sum, s) => sum + s.total, 0);
+    const totalCost = getDb().getSales().reduce((sum, s) => sum + (s.cost || 0), 0);
+    const totalProfit = getDb().getSales().reduce((sum, s) => sum + (s.profit || 0), 0);
+    data.push({}); // Empty row
+    const totalRow = { 'Mã GD': 'TỔNG CỘNG', 'Doanh thu (VNĐ)': totalRevenue };
+    if (role === 'admin') {
+      totalRow['Tổng chi phí (VNĐ)'] = totalCost;
+      totalRow['Lợi nhuận (VNĐ)'] = totalProfit;
+    }
+    data.push(totalRow);
     filename = 'doanh-thu.xlsx';
   }
 

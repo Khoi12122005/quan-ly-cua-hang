@@ -1,4 +1,4 @@
-# RetailPro v1.1.0 🚀
+# RetailPro v1.1.7 🚀
 
 **RetailPro** là ứng dụng quản lý bán hàng (POS) & Tồn kho trên máy tính dành cho các cửa hàng nhỏ lẻ, tạp hóa gia đình. Được thiết kế đặc biệt với giao diện lớn, rõ ràng, dễ sử dụng cho **người lớn tuổi**, đảm bảo an toàn dữ liệu tuyệt đối và khả năng tự động cập nhật.
 
@@ -18,7 +18,7 @@
 ### 💰 Bán hàng & Báo cáo
 - **POS Nhanh chóng:** Tìm kiếm thông minh, tính tiền tự động, in hóa đơn trực tiếp chỉ với 1 click.
 - **Báo cáo Doanh thu:** Xem tổng quan và chi tiết doanh thu, lợi nhuận, chi phí theo từng ngày/tuần/tháng.
-- **Xuất Excel:** Dễ dàng xuất báo cáo doanh thu và danh sách sản phẩm ra file `.xlsx` chuyên nghiệp.
+- **Xuất Excel Thông minh:** Dễ dàng xuất báo cáo doanh thu và danh sách sản phẩm ra file `.xlsx` chuyên nghiệp, **tự động tính tổng cộng doanh thu và lợi nhuận ở cuối bảng**.
 
 ### 🛡️ An toàn Dữ liệu & Hệ thống
 - **Sao lưu / Khôi phục 2 lớp:** Cảnh báo an toàn 2 bước trước khi ghi đè dữ liệu. Tự động tạo bản sao lưu dự phòng (auto-backup) trước mỗi lần restore để chống mất dữ liệu.
