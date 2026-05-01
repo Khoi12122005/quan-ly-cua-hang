@@ -270,6 +270,12 @@ function createSale(items, total) {
     for (const item of items) {
       const product = db.prepare('SELECT * FROM products WHERE id = ? AND is_deleted = 0').get(item.productId);
       if (!product) return { success: false, message: `Sản phẩm không tồn tại` };
+      
+      let qty = Number(item.quantity);
+      if (product.category !== 'Gạo' && !Number.isInteger(qty)) {
+        return { success: false, message: `"${product.name}" không thể bán số lượng lẻ` };
+      }
+      
       if (product.quantity < item.quantity) {
         return { success: false, message: `"${product.name}" không đủ tồn kho (còn ${product.quantity})` };
       }
