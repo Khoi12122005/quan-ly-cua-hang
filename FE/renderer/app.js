@@ -30,12 +30,13 @@ function doLogout() {
     api.navigateToLogin();
   }
 }
-const pageTitles = { dashboard: 'Dashboard', products: 'Sản phẩm', inventory: 'Tồn kho', sales: 'Bán hàng', history: 'Lịch sử', settings: 'Cài đặt' };
+const pageTitles = { dashboard: 'Dashboard', products: 'Sản phẩm', inventory: 'Tồn kho', 'stock-import': 'Nhập hàng', sales: 'Bán hàng', history: 'Lịch sử', reports: 'Báo cáo', settings: 'Cài đặt' };
 let currentView = 'dashboard';
 function navigate(view, btn) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById(`view-${view}`).classList.add('active');
+  const viewEl = document.getElementById('view-' + view);
+  if (viewEl) viewEl.classList.add('active');
   if (btn) btn.classList.add('active');
   document.getElementById('page-title').textContent = pageTitles[view] || view;
   currentView = view;
@@ -43,8 +44,10 @@ function navigate(view, btn) {
   if (view === 'dashboard') loadDashboard();
   else if (view === 'products') loadProducts();
   else if (view === 'inventory') loadInventory();
+  else if (view === 'stock-import') loadStockImport();
   else if (view === 'sales') loadSalesView();
   else if (view === 'history') loadHistory();
+  else if (view === 'reports') loadReports();
   else if (view === 'settings') loadSettings();
 }
 async function loadDashboard() {
@@ -484,10 +487,12 @@ async function doBackup() {
   else if (res.message !== 'Đã hủy') toast(res.message, 'error');
 }
 async function doRestore() {
-  const warn = confirm('⚠️ CẢNH BÁO!\n\nKhôi phục sẽ XÓA TOÀN BỘ dữ liệu hiện tại và thay bằng dữ liệu từ file backup.\n\nBạn có chắc chắn muốn tiếp tục?');
-  if (!warn) return;
+  const w1 = confirm('⚠️ CẢNH BÁO!\n\nKhôi phục sẽ XÓA TOÀN BỘ dữ liệu hiện tại.\n\nBạn có chắc chắn?');
+  if (!w1) return;
+  const w2 = confirm('⚠️ XÁC NHẬN LẦN 2\n\nDữ liệu cũ sẽ được tự động sao lưu.\nNhấn OK để tiếp tục.');
+  if (!w2) return;
   const res = await api.importBackup();
-  if (res.success) { toast(res.message, 'success'); loadDashboard(); }
+  if (res.success) { toast(res.message, 'success'); navigate('dashboard', document.querySelector('[data-view=dashboard]')); }
   else if (res.message !== 'Đã hủy') toast(res.message, 'error');
 }
 async function exportExcel(type) {
@@ -516,3 +521,137 @@ document.getElementById('global-search').addEventListener('input', function() {
   if (currentView === 'products') { document.getElementById('product-search').value = this.value; filterProducts(); }
 });
 loadDashboard();
+
+// ─── STOCK IMPORT ───
+let siProducts = [];
+async function loadStockImport() {
+  try {
+    siProducts = await api.getProducts();
+    const sel = document.getElementById('si-product');
+    sel.innerHTML = '<option value="">-- Chọn sản phẩm --</option>' + siProducts.map(function(p) {
+      return '<option value="' + p.id + '">' + p.name + ' (' + p.category + ' — Tồn: ' + p.quantity + ' ' + (p.unit||'') + ')</option>';
+    }).join('');
+    document.getElementById('si-product-info').style.display = 'none';
+    document.getElementById('si-quantity').value = '';
+    document.getElementById('si-update-cost').checked = false;
+    document.getElementById('si-cost').style.display = 'none';
+    document.getElementById('si-cost').value = '';
+    document.getElementById('si-note').value = '';
+    const imports = await api.getStockImports();
+    renderStockImports(imports);
+  } catch(e) { toast('Lỗi tải nhập hàng','error'); }
+}
+function onStockImportProductChange() {
+  const id = parseInt(document.getElementById('si-product').value);
+  const info = document.getElementById('si-product-info');
+  if (!id) { info.style.display = 'none'; return; }
+  const p = siProducts.find(function(x) { return x.id === id; });
+  if (!p) { info.style.display = 'none'; return; }
+  info.style.display = 'block';
+  document.getElementById('si-p-name').textContent = p.name;
+  document.getElementById('si-p-stock').textContent = p.quantity + ' ' + (p.unit||'');
+  document.getElementById('si-p-cost').textContent = fmt(p.cost_price||0);
+  document.getElementById('si-quantity').step = p.category === 'Gạo' ? 'any' : '1';
+}
+function toggleCostInput() {
+  document.getElementById('si-cost').style.display = document.getElementById('si-update-cost').checked ? 'block' : 'none';
+}
+async function submitStockImport() {
+  var productId = parseInt(document.getElementById('si-product').value);
+  if (!productId) { toast('Vui lòng chọn sản phẩm','error'); return; }
+  var quantity = parseFloat(document.getElementById('si-quantity').value);
+  if (isNaN(quantity) || quantity <= 0) { toast('Số lượng phải lớn hơn 0','error'); return; }
+  if (quantity > 10000) { toast('Số lượng tối đa 10,000','error'); return; }
+  var p = siProducts.find(function(x) { return x.id === productId; });
+  if (p && p.category !== 'Gạo' && !Number.isInteger(quantity)) { toast('Sản phẩm này không hỗ trợ số lẻ','error'); return; }
+  var newCostPrice = null;
+  if (document.getElementById('si-update-cost').checked) {
+    newCostPrice = parseFloat(document.getElementById('si-cost').value);
+    if (isNaN(newCostPrice) || newCostPrice < 0) { toast('Giá vốn không hợp lệ','error'); return; }
+  }
+  var note = document.getElementById('si-note').value.trim();
+  if (!confirm('Xác nhận nhập ' + quantity + ' ' + (p?p.unit:'') + ' "' + (p?p.name:'') + '"?')) return;
+  var res = await api.stockImport({ productId: productId, quantity: quantity, newCostPrice: newCostPrice, note: note });
+  if (res.success) { toast(res.message,'success'); loadStockImport(); }
+  else toast(res.message,'error');
+}
+function renderStockImports(list) {
+  var tbody = document.getElementById('stock-import-table');
+  if (!list || !list.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--gray-400)">Chưa có lịch sử nhập</td></tr>'; return; }
+  tbody.innerHTML = list.map(function(si) {
+    var costText = si.old_cost_price !== si.new_cost_price ? fmt(si.old_cost_price) + ' → ' + fmt(si.new_cost_price) : fmt(si.new_cost_price);
+    return '<tr><td style="font-size:12px;color:var(--gray-500)">' + si.date + '</td><td><strong>' + si.product_name + '</strong></td><td><strong style="color:var(--success)">+' + si.quantity + '</strong></td><td class="admin-only">' + costText + '</td><td style="color:var(--gray-400);font-size:12px">' + (si.note||'—') + '</td></tr>';
+  }).join('');
+}
+
+// ─── REPORTS ───
+let lastReportData = null;
+async function loadReports() {
+  var today = new Date().toISOString().slice(0,10);
+  var from30 = new Date(Date.now() - 30*86400000).toISOString().slice(0,10);
+  document.getElementById('report-from').value = from30;
+  document.getElementById('report-to').value = today;
+  filterReports();
+}
+function setReportRange(range) {
+  var today = new Date().toISOString().slice(0,10);
+  var from = today;
+  if (range === '7days') from = new Date(Date.now() - 7*86400000).toISOString().slice(0,10);
+  else if (range === '30days') from = new Date(Date.now() - 30*86400000).toISOString().slice(0,10);
+  else if (range === 'month') { var d = new Date(); from = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-01'; }
+  document.getElementById('report-from').value = from;
+  document.getElementById('report-to').value = today;
+  filterReports();
+}
+async function filterReports() {
+  var fromDate = document.getElementById('report-from').value;
+  var toDate = document.getElementById('report-to').value;
+  if (!fromDate || !toDate) { toast('Vui lòng chọn khoảng thời gian','warning'); return; }
+  try {
+    var data = await api.getReportData({ fromDate: fromDate, toDate: toDate });
+    lastReportData = data;
+    document.getElementById('rpt-revenue').textContent = fmt(data.totalRevenue);
+    document.getElementById('rpt-orders').textContent = data.totalOrders + ' đơn hàng';
+    document.getElementById('rpt-cost').textContent = fmt(data.totalCost);
+    var profitEl = document.getElementById('rpt-profit');
+    profitEl.textContent = fmt(data.totalProfit);
+    profitEl.style.color = data.totalProfit < 0 ? 'var(--danger)' : 'var(--success)';
+    var tbody = document.getElementById('report-table');
+    if (!data.daily.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--gray-400)">Không có dữ liệu</td></tr>'; return; }
+    tbody.innerHTML = data.daily.map(function(d) {
+      var pColor = d.profit < 0 ? 'var(--danger)' : 'var(--success)';
+      return '<tr><td><strong>' + d.day + '</strong></td><td>' + d.count + '</td><td><strong>' + fmt(d.revenue) + '</strong></td><td class="admin-only">' + fmt(d.cost) + '</td><td class="admin-only"><strong style="color:' + pColor + '">' + fmt(d.profit) + '</strong></td></tr>';
+    }).join('');
+  } catch(e) { toast('Lỗi tải báo cáo','error'); }
+}
+async function exportReportExcel() {
+  if (!lastReportData || !lastReportData.daily.length) { toast('Không có dữ liệu để xuất','warning'); return; }
+  var role = currentUser ? currentUser.role : 'user';
+  var res = await api.exportExcel({ type: 'report', role: role, reportData: lastReportData });
+  if (res.success) toast(res.message,'success');
+  else if (res.message !== 'Đã hủy') toast(res.message,'error');
+}
+
+// ─── AUTO UPDATE UI ───
+try {
+  api.onUpdateStatus(function(data) {
+    var banner = document.getElementById('update-banner');
+    var content = document.getElementById('update-content');
+    if (!banner || !content) return;
+    if (data.status === 'available') {
+      banner.style.display = 'flex';
+      content.innerHTML = '<span>🎉 Phiên bản mới (' + (data.version||'') + ')</span><div><button class="btn btn-primary btn-sm" onclick="api.updateDownload()">Cập nhật</button> <button class="btn btn-ghost btn-sm" onclick="document.getElementById(\'update-banner\').style.display=\'none\'">Để sau</button></div>';
+    } else if (data.status === 'downloading') {
+      banner.style.display = 'flex';
+      content.innerHTML = '<span>⏬ Đang tải... ' + (data.percent||0) + '%</span><div style="width:120px;height:8px;background:var(--gray-200);border-radius:4px;overflow:hidden"><div style="height:100%;background:var(--primary);width:' + (data.percent||0) + '%;transition:width .3s"></div></div>';
+    } else if (data.status === 'ready') {
+      banner.style.display = 'flex';
+      content.innerHTML = '<span>✅ Cập nhật xong!</span><button class="btn btn-success btn-sm" onclick="api.updateInstall()">Khởi động lại</button>';
+    } else if (data.status === 'error') {
+      banner.style.display = 'flex';
+      content.innerHTML = '<span>❌ Cập nhật thất bại</span><button class="btn btn-ghost btn-sm" onclick="api.updateCheck()">Thử lại</button>';
+      setTimeout(function() { banner.style.display = 'none'; }, 8000);
+    } else { banner.style.display = 'none'; }
+  });
+} catch(e) {}
+

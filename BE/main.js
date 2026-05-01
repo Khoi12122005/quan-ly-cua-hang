@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, Menu, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, Menu } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -13,7 +13,7 @@ function createWindow() {
     frame: false,
     titleBarStyle: 'hidden',
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'), // BE/preload.js
+      preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
     },
@@ -34,6 +34,7 @@ app.whenReady().then(() => {
   const db = require('../database/database');
   db.init();
   createWindow();
+  initAutoUpdater();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -43,6 +44,8 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
+
+// ─── WINDOW CONTROLS ───
 
 ipcMain.on('window-minimize', () => mainWindow.minimize());
 ipcMain.on('window-maximize', () => {
@@ -60,20 +63,39 @@ ipcMain.on('navigate-to-login', () => {
 
 const getDb = () => require('../database/database');
 
+// ─── AUTH ───
+
 ipcMain.handle('auth-register', (event, { username, password }) => getDb().createUser(username, password));
 ipcMain.handle('auth-login', (event, { username, password }) => getDb().loginUser(username, password));
 ipcMain.handle('auth-change-password', (event, { username, oldPassword, newPassword }) => getDb().changePassword(username, oldPassword, newPassword));
+
+// ─── PRODUCTS ───
 
 ipcMain.handle('products-get-all', () => getDb().getProducts());
 ipcMain.handle('products-add', (event, product) => getDb().addProduct(product));
 ipcMain.handle('products-update', (event, product) => getDb().updateProduct(product));
 ipcMain.handle('products-delete', (event, id) => getDb().deleteProduct(id));
 
+// ─── STOCK IMPORT ───
+
+ipcMain.handle('stock-import', (event, data) => getDb().stockImport(data));
+ipcMain.handle('stock-imports-get-all', () => getDb().getStockImports());
+
+// ─── SALES ───
+
 ipcMain.handle('sales-create', (event, { items, total }) => getDb().createSale(items, total));
 ipcMain.handle('sales-get-all', () => getDb().getSales());
 ipcMain.handle('sales-get-detail', (event, saleId) => getDb().getSaleDetail(saleId));
 
+// ─── DASHBOARD ───
+
 ipcMain.handle('dashboard-stats', () => getDb().getDashboardStats());
+
+// ─── REPORTS ───
+
+ipcMain.handle('report-data', (event, { fromDate, toDate }) => getDb().getReportData(fromDate, toDate));
+
+// ─── BACKUP / RESTORE (SAFE) ───
 
 ipcMain.handle('backup-export', async () => {
   const data = getDb().exportBackup();
@@ -85,7 +107,7 @@ ipcMain.handle('backup-export', async () => {
   });
   if (!filePath) return { success: false, message: 'Đã hủy' };
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
-  return { success: true, message: `Đã lưu: ${filePath}` };
+  return { success: true, message: `Đã lưu backup tại:\n${filePath}` };
 });
 
 ipcMain.handle('backup-import', async () => {
@@ -95,30 +117,63 @@ ipcMain.handle('backup-import', async () => {
     properties: ['openFile'],
   });
   if (!filePaths || filePaths.length === 0) return { success: false, message: 'Đã hủy' };
+
   try {
     const raw = fs.readFileSync(filePaths[0], 'utf-8');
-    const data = JSON.parse(raw);
+    let data;
+    try {
+      data = JSON.parse(raw);
+    } catch (parseErr) {
+      return { success: false, message: 'File không phải JSON hợp lệ. Vui lòng chọn đúng file backup.' };
+    }
+
+    const validateError = getDb().validateBackupData(data);
+    if (validateError) {
+      return { success: false, message: validateError };
+    }
+
+    // Auto-backup before restore
+    const autoBackupData = getDb().exportBackup();
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const userDataPath = app.getPath('userData');
+    const autoBackupDir = path.join(userDataPath, 'auto-backups');
+    if (!fs.existsSync(autoBackupDir)) fs.mkdirSync(autoBackupDir, { recursive: true });
+    const autoBackupPath = path.join(autoBackupDir, `backup_before_restore_${timestamp}.json`);
+    fs.writeFileSync(autoBackupPath, JSON.stringify(autoBackupData, null, 2), 'utf-8');
+
     getDb().importBackup(data);
-    return { success: true, message: 'Khôi phục thành công!' };
+    return { success: true, message: 'Khôi phục dữ liệu thành công!\n\nDữ liệu cũ đã được tự động sao lưu.' };
   } catch (e) {
-    return { success: false, message: 'File không hợp lệ: ' + e.message };
+    return { success: false, message: 'Lỗi khôi phục: ' + e.message };
   }
 });
 
-ipcMain.handle('export-excel', async (event, { type, role }) => {
+// ─── EXCEL EXPORT ───
+
+ipcMain.handle('export-excel', async (event, { type, role, reportData }) => {
   const XLSX = require('xlsx');
   let data, filename;
+
   if (type === 'products') {
     data = getDb().getProducts().map(p => {
       const row = { 'Tên sản phẩm': p.name, 'Danh mục': p.category };
-      if (role === 'admin') {
-        row['Giá vốn (VNĐ)'] = p.cost_price || 0;
-      }
+      if (role === 'admin') row['Giá vốn (VNĐ)'] = p.cost_price || 0;
       row['Giá bán (VNĐ)'] = p.price;
       row['Tồn kho'] = p.quantity;
+      row['Đơn vị'] = p.unit || '';
       return row;
     });
     filename = 'san-pham.xlsx';
+  } else if (type === 'report' && reportData) {
+    data = reportData.daily.map(d => {
+      const row = { 'Ngày': d.day, 'Số đơn': d.count, 'Doanh thu (VNĐ)': d.revenue };
+      if (role === 'admin') {
+        row['Chi phí (VNĐ)'] = d.cost;
+        row['Lợi nhuận (VNĐ)'] = d.profit;
+      }
+      return row;
+    });
+    filename = 'bao-cao.xlsx';
   } else {
     data = getDb().getSales().map(s => {
       const row = {
@@ -134,6 +189,7 @@ ipcMain.handle('export-excel', async (event, { type, role }) => {
     });
     filename = 'doanh-thu.xlsx';
   }
+
   const ws = XLSX.utils.json_to_sheet(data);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
@@ -143,8 +199,10 @@ ipcMain.handle('export-excel', async (event, { type, role }) => {
   });
   if (!filePath) return { success: false, message: 'Đã hủy' };
   XLSX.writeFile(wb, filePath);
-  return { success: true, message: `Đã xuất: ${filePath}` };
+  return { success: true, message: `Đã xuất file tại:\n${filePath}` };
 });
+
+// ─── IMAGE PICKER ───
 
 ipcMain.handle('pick-image', async () => {
   const { filePaths } = await dialog.showOpenDialog(mainWindow, {
@@ -158,3 +216,62 @@ ipcMain.handle('pick-image', async () => {
   const mime = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : `image/${ext}`;
   return `data:${mime};base64,${buf.toString('base64')}`;
 });
+
+// ─── AUTO UPDATE ───
+
+function initAutoUpdater() {
+  try {
+    const { autoUpdater } = require('electron-updater');
+    autoUpdater.autoDownload = false;
+    autoUpdater.autoInstallOnAppQuit = true;
+
+    autoUpdater.on('checking-for-update', () => {
+      sendUpdateStatus('checking');
+    });
+
+    autoUpdater.on('update-available', (info) => {
+      sendUpdateStatus('available', { version: info.version });
+    });
+
+    autoUpdater.on('update-not-available', () => {
+      sendUpdateStatus('not-available');
+    });
+
+    autoUpdater.on('download-progress', (progress) => {
+      sendUpdateStatus('downloading', { percent: Math.round(progress.percent) });
+    });
+
+    autoUpdater.on('update-downloaded', () => {
+      sendUpdateStatus('ready');
+    });
+
+    autoUpdater.on('error', (err) => {
+      sendUpdateStatus('error', { message: err.message });
+    });
+
+    // Check after 3 seconds
+    setTimeout(() => {
+      autoUpdater.checkForUpdates().catch(() => {});
+    }, 3000);
+
+    ipcMain.on('update-download', () => {
+      autoUpdater.downloadUpdate().catch(() => {});
+    });
+
+    ipcMain.on('update-install', () => {
+      autoUpdater.quitAndInstall();
+    });
+
+    ipcMain.on('update-check', () => {
+      autoUpdater.checkForUpdates().catch(() => {});
+    });
+  } catch (e) {
+    // electron-updater not available in dev mode — silently skip
+  }
+}
+
+function sendUpdateStatus(status, data = {}) {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('update-status', { status, ...data });
+  }
+}

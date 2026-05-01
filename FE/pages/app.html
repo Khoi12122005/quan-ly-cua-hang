@@ -34,11 +34,17 @@
     <button class="nav-item" data-view="inventory" onclick="navigate('inventory',this)">
       <span class="nav-icon">🗄️</span> Tồn kho
     </button>
+    <button class="nav-item" data-view="stock-import" onclick="navigate('stock-import',this)">
+      <span class="nav-icon">📥</span> Nhập hàng
+    </button>
     <button class="nav-item" data-view="sales" onclick="navigate('sales',this)">
       <span class="nav-icon">🛒</span> Bán hàng
     </button>
     <button class="nav-item" data-view="history" onclick="navigate('history',this)">
       <span class="nav-icon">📋</span> Lịch sử
+    </button>
+    <button class="nav-item" data-view="reports" onclick="navigate('reports',this)">
+      <span class="nav-icon">📈</span> Báo cáo
     </button>
     <div class="nav-section-label" style="margin-top:12px">Hệ thống</div>
     <button class="nav-item" data-view="settings" onclick="navigate('settings',this)">
@@ -49,7 +55,7 @@
     <button class="nav-item" onclick="doLogout()" style="color:#f87171">
       <span class="nav-icon">🚪</span> Đăng xuất
     </button>
-    <div style="font-size:10px;color:#475569;padding:4px 12px">RetailPro v1.0.0</div>
+    <div style="font-size:10px;color:#475569;padding:4px 12px">RetailPro v1.1.0</div>
   </div>
 </aside>
 
@@ -226,69 +232,89 @@
     </div>
   </div>
 
-    <div id="view-settings" class="view">
-    <div class="page-header"><h2>Cài đặt hệ thống</h2></div>
+    <div id="view-stock-import" class="view">
+    <div class="page-header"><h2>📥 Nhập hàng</h2></div>
     <div class="grid-2" style="align-items:start">
-            <div>
-        <div class="settings-section">
-          <div class="settings-section-title">💾 Quản lý dữ liệu</div>
-          <div class="settings-item">
-            <div class="settings-item-info">
-              <h4>Sao lưu dữ liệu</h4>
-              <p>Xuất toàn bộ dữ liệu ra file JSON</p>
-            </div>
-            <button class="btn btn-primary btn-sm" onclick="doBackup()">📤 Backup</button>
+      <div class="card">
+        <div class="card-header"><span class="card-title">📦 Nhập thêm hàng</span></div>
+        <div class="card-body">
+          <div class="form-group">
+            <label class="form-label">Chọn sản phẩm *</label>
+            <select id="si-product" class="form-control" onchange="onStockImportProductChange()">
+              <option value="">-- Chọn sản phẩm --</option>
+            </select>
           </div>
-          <div class="settings-item">
-            <div class="settings-item-info">
-              <h4>Khôi phục dữ liệu</h4>
-              <p>⚠️ Sẽ ghi đè toàn bộ dữ liệu hiện tại</p>
-            </div>
-            <button class="btn btn-danger btn-sm" onclick="doRestore()">📥 Restore</button>
+          <div id="si-product-info" style="display:none;padding:12px;background:var(--gray-50);border-radius:var(--radius-sm);margin-bottom:16px">
+            <div style="font-size:14px"><strong id="si-p-name"></strong></div>
+            <div style="font-size:13px;color:var(--gray-500)">Tồn kho hiện tại: <strong id="si-p-stock"></strong> | Giá vốn: <strong id="si-p-cost"></strong></div>
           </div>
+          <div class="form-group">
+            <label class="form-label">Số lượng nhập *</label>
+            <input type="number" id="si-quantity" class="form-control" placeholder="VD: 50" min="0.01" max="10000"/>
+            <div id="si-qty-error" class="form-error" style="display:none"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="display:flex;align-items:center;gap:8px">
+              <input type="checkbox" id="si-update-cost" onchange="toggleCostInput()"/> Cập nhật giá vốn mới
+            </label>
+            <input type="number" id="si-cost" class="form-control" placeholder="Giá vốn mới (₫)" min="0" style="display:none"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ghi chú</label>
+            <input type="text" id="si-note" class="form-control" placeholder="VD: Nhập từ kho Bình Dương"/>
+          </div>
+          <button class="btn btn-success btn-lg w-full" onclick="submitStockImport()">📥 Xác nhận nhập hàng</button>
         </div>
-        <div class="settings-section">
-          <div class="settings-section-title">📊 Xuất Excel</div>
-          <div class="settings-item">
-            <div class="settings-item-info"><h4>Danh sách sản phẩm</h4><p>Xuất file .xlsx</p></div>
-            <button class="btn btn-outline btn-sm" onclick="exportExcel('products')">📤 Xuất</button>
-          </div>
-          <div class="settings-item">
-            <div class="settings-item-info"><h4>Lịch sử doanh thu</h4><p>Xuất file .xlsx</p></div>
-            <button class="btn btn-outline btn-sm" onclick="exportExcel('sales')">📤 Xuất</button>
-          </div>
-        </div>
-        <div class="settings-section">
-          <div class="settings-section-title">ℹ️ Thông tin</div>
-          <div class="settings-item">
-            <div class="settings-item-info"><h4>Phiên bản</h4><p>RetailPro v1.0.0</p></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">📋 Lịch sử nhập hàng</span></div>
+        <div class="card-body" style="padding:0">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Thời gian</th><th>Sản phẩm</th><th>Số lượng</th><th class="admin-only">Giá vốn</th><th>Ghi chú</th></tr></thead>
+              <tbody id="stock-import-table"></tbody>
+            </table>
           </div>
         </div>
       </div>
-            <div>
-        <div class="settings-section">
-          <div class="settings-section-title">🔒 Bảo mật tài khoản</div>
-          <div class="card">
-            <div class="card-body">
-              <div class="form-group">
-                <label class="form-label">Tên đăng nhập hiện tại</label>
-                <input type="text" class="form-control" id="settings-username" readonly style="background:var(--gray-50)"/>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Mật khẩu hiện tại</label>
-                <input type="password" class="form-control" id="settings-old-pw" placeholder="Nhập mật khẩu hiện tại"/>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Mật khẩu mới</label>
-                <input type="password" class="form-control" id="settings-new-pw" placeholder="Tối thiểu 6 ký tự"/>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Xác nhận mật khẩu mới</label>
-                <input type="password" class="form-control" id="settings-new-pw2" placeholder="Nhập lại mật khẩu mới"/>
-              </div>
-              <button class="btn btn-primary w-full" onclick="doChangePassword()">🔐 Đổi mật khẩu</button>
-            </div>
-          </div>
+    </div>
+  </div>
+
+    <div id="view-reports" class="view">
+    <div class="page-header">
+      <h2>📈 Báo cáo doanh thu</h2>
+      <button class="btn btn-outline" onclick="exportReportExcel()">📊 Xuất Excel</button>
+    </div>
+    <div class="flex items-center gap-3 mb-4" style="flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:8px">
+        <label class="form-label" style="margin:0;white-space:nowrap">Từ ngày:</label>
+        <input type="date" id="report-from" class="form-control" style="width:180px"/>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <label class="form-label" style="margin:0;white-space:nowrap">Đến ngày:</label>
+        <input type="date" id="report-to" class="form-control" style="width:180px"/>
+      </div>
+      <button class="btn btn-primary" onclick="filterReports()">🔍 Xem báo cáo</button>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-ghost btn-sm" onclick="setReportRange('today')">Hôm nay</button>
+        <button class="btn btn-ghost btn-sm" onclick="setReportRange('7days')">7 ngày</button>
+        <button class="btn btn-ghost btn-sm" onclick="setReportRange('30days')">30 ngày</button>
+        <button class="btn btn-ghost btn-sm" onclick="setReportRange('month')">Tháng này</button>
+      </div>
+    </div>
+    <div class="grid-3 mb-6" id="report-summary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px">
+      <div class="stat-card"><div class="stat-icon blue">💰</div><div><div class="stat-label">Tổng doanh thu</div><div class="stat-value" id="rpt-revenue">0 ₫</div><div class="stat-sub" id="rpt-orders">0 đơn hàng</div></div></div>
+      <div class="stat-card admin-only"><div class="stat-icon" style="background:#f1f5f9">💸</div><div><div class="stat-label">Tổng chi phí</div><div class="stat-value" id="rpt-cost">0 ₫</div></div></div>
+      <div class="stat-card admin-only"><div class="stat-icon green">📈</div><div><div class="stat-label">Tổng lợi nhuận</div><div class="stat-value" id="rpt-profit" style="color:var(--success)">0 ₫</div></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">📊 Chi tiết theo ngày</span></div>
+      <div class="card-body" style="padding:0">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Ngày</th><th>Số đơn</th><th>Doanh thu</th><th class="admin-only">Chi phí</th><th class="admin-only">Lợi nhuận</th></tr></thead>
+            <tbody id="report-table"></tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -325,7 +351,81 @@
     </div>
   </div>
 
+
+  <div id="view-settings" class="view">
+    <div class="page-header"><h2>Cài đặt hệ thống</h2></div>
+    <div class="grid-2" style="align-items:start">
+            <div>
+        <div class="settings-section">
+          <div class="settings-section-title">💾 Quản lý dữ liệu</div>
+          <div class="settings-item">
+            <div class="settings-item-info">
+              <h4>Sao lưu dữ liệu</h4>
+              <p>Xuất toàn bộ dữ liệu ra file JSON</p>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="doBackup()">📤 Backup</button>
+          </div>
+          <div class="settings-item">
+            <div class="settings-item-info">
+              <h4>Khôi phục dữ liệu</h4>
+              <p>⚠️ Sẽ ghi đè toàn bộ dữ liệu hiện tại</p>
+            </div>
+            <button class="btn btn-danger btn-sm" onclick="doRestore()">📥 Restore</button>
+          </div>
+        </div>
+        <div class="settings-section">
+          <div class="settings-section-title">📊 Xuất Excel</div>
+          <div class="settings-item">
+            <div class="settings-item-info"><h4>Danh sách sản phẩm</h4><p>Xuất file .xlsx</p></div>
+            <button class="btn btn-outline btn-sm" onclick="exportExcel('products')">📤 Xuất</button>
+          </div>
+          <div class="settings-item">
+            <div class="settings-item-info"><h4>Lịch sử doanh thu</h4><p>Xuất file .xlsx</p></div>
+            <button class="btn btn-outline btn-sm" onclick="exportExcel('sales')">📤 Xuất</button>
+          </div>
+        </div>
+        <div class="settings-section">
+          <div class="settings-section-title">ℹ️ Thông tin</div>
+          <div class="settings-item">
+            <div class="settings-item-info"><h4>Phiên bản</h4><p>RetailPro v1.1.0</p></div>
+          </div>
+        </div>
+      </div>
+            <div>
+        <div class="settings-section">
+          <div class="settings-section-title">🔒 Bảo mật tài khoản</div>
+          <div class="card">
+            <div class="card-body">
+              <div class="form-group">
+                <label class="form-label">Tên đăng nhập hiện tại</label>
+                <input type="text" class="form-control" id="settings-username" readonly style="background:var(--gray-50)"/>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Mật khẩu hiện tại</label>
+                <input type="password" class="form-control" id="settings-old-pw" placeholder="Nhập mật khẩu hiện tại"/>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Mật khẩu mới</label>
+                <input type="password" class="form-control" id="settings-new-pw" placeholder="Tối thiểu 6 ký tự"/>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Xác nhận mật khẩu mới</label>
+                <input type="password" class="form-control" id="settings-new-pw2" placeholder="Nhập lại mật khẩu mới"/>
+              </div>
+              <button class="btn btn-primary w-full" onclick="doChangePassword()">🔐 Đổi mật khẩu</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </main>
+
+<div id="update-banner" class="update-banner" style="display:none">
+  <div id="update-content"></div>
+</div>
+
 
 <div id="modal-product" class="modal-overlay hidden">
   <div class="modal">

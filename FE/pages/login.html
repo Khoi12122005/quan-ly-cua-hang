@@ -81,7 +81,7 @@ async function doLogin(e) {
   try {
     const res = await api.login({ username, password });
     if (res.success) {
-      sessionStorage.setItem('user', JSON.stringify({ username: res.username, id: res.id }));
+      sessionStorage.setItem('user', JSON.stringify({ username: res.username, id: res.id, role: res.role || 'user' }));
       api.navigateToApp();
     } else {
       errEl.textContent = res.message; errEl.style.display = 'block';

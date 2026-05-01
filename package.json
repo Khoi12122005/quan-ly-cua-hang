@@ -1,6 +1,6 @@
 {
   "name": "shop-manager",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "RetailPro - Ứng dụng quản lý bán hàng",
   "main": "BE/main.js",
   "scripts": {
@@ -15,7 +15,14 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true
-    }
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Khoi12122005",
+        "repo": "quan-ly-cua-hang"
+      }
+    ]
   },
   "devDependencies": {
     "electron": "^28.3.3",
@@ -23,6 +30,7 @@
   },
   "dependencies": {
     "better-sqlite3": "^9.6.0",
+    "electron-updater": "^6.1.7",
     "xlsx": "^0.18.5"
   }
 }

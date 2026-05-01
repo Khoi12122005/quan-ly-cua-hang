@@ -33,10 +33,10 @@
 
 body {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px;
+  font-size: 15px;
   color: var(--gray-800);
   background: var(--gray-50);
-  line-height: 1.5;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -466,3 +466,33 @@ tbody tr:last-child td { border-bottom: none; }
 }
 .success-actions { display: flex; gap: 16px; }
 .success-actions .btn { flex: 1; justify-content: center; padding: 14px 24px; font-size: 15px; border-radius: 12px; }
+
+/* ─── UX: Elderly-friendly overrides ─── */
+.btn { padding: 10px 20px; font-size: 15px; }
+.btn-sm { padding: 7px 14px; font-size: 13px; }
+.btn-lg { padding: 14px 28px; font-size: 16px; }
+.form-control { padding: 12px 14px; font-size: 15px; }
+.nav-item { font-size: 14px; padding: 11px 14px; }
+.stat-value { font-size: 28px; }
+tbody td { font-size: 14px; }
+thead th { font-size: 13px; }
+.product-name { font-size: 15px; }
+.product-price { font-size: 17px; }
+.cart-item-name { font-size: 14px; }
+.cart-item-price { font-size: 14px; }
+.page-header h2 { font-size: 22px; }
+
+/* ─── Update Banner ─── */
+.update-banner {
+  position: fixed; bottom: 0; left: var(--sidebar-w); right: 0;
+  background: var(--gray-900); color: #fff;
+  padding: 12px 24px; z-index: 999;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 -4px 16px rgba(0,0,0,.15);
+  animation: slideUpBanner .3s ease;
+}
+.update-banner > div {
+  display: flex; align-items: center; gap: 16px;
+  font-size: 14px; font-weight: 500;
+}
+@keyframes slideUpBanner { from { transform: translateY(100%); } to { transform: translateY(0); } }
